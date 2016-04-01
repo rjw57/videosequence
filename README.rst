@@ -1,6 +1,11 @@
 Accessing Video Files as Python Sequences
 =========================================
 
+Quite often I find myself writing scripts which need to load a few frames from a
+video file, process them and save the result to disk. It's a pain to implement
+video opening, seeking and decoding over and over again and complex Python
+bindings are a little overkill for my needs.
+
 Videosequence is a library which hides the complexity of simply opening a video
 file in Python as a sequence of images. It exposes a video file as just that: a
 Python sequence type containing `PIL <https://pillow.readthedocs.org/>`_
