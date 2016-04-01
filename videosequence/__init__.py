@@ -1,4 +1,6 @@
 from __future__ import division
+from builtins import range
+
 import collections
 import contextlib
 import logging
@@ -39,14 +41,7 @@ class VideoSequence(collections.Sequence):
         appsink.set_property("caps", videocaps)
         pipeline.set_property("video-sink", appsink)
 
-        ret = pipeline.set_state(Gst.State.PAUSED)
-        if ret == Gst.StateChangeReturn.ASYNC:
-            ret, state, _ = pipeline.get_state(STATE_CHANGE_TIMEOUT)
-        if ret == Gst.StateChangeReturn.FAILURE:
-            raise IOError("Failed to open video")
-        elif ret == Gst.StateChangeReturn.NO_PREROLL:
-            raise IOError("Live sources not supported")
-        assert state == Gst.State.PAUSED
+        state = self._timeout_set_state(Gst.State.PAUSED)
 
         sample = appsink.pull_preroll()
         if sample is None:
@@ -67,20 +62,68 @@ class VideoSequence(collections.Sequence):
 
         self.duration = int(duration / self.ns_per_frame)
 
+        self.current_index = None
+        self._seek(0)
+
     def close(self):
         self.pipeline.set_state(Gst.State.NULL)
 
-    def _get_frame(self, index):
-        flags = Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE | Gst.SeekFlags.SKIP
-        ok = self.pipeline.seek_simple(
-            Gst.Format.TIME, flags, index * self.ns_per_frame)
+    def _timeout_set_state(self, state):
+        ret = self.pipeline.set_state(state)
+        if ret == Gst.StateChangeReturn.ASYNC:
+            self.pipeline.bus.timed_pop_filtered(
+                    STATE_CHANGE_TIMEOUT, Gst.MessageType.ASYNC_DONE)
+        if ret == Gst.StateChangeReturn.FAILURE:
+            raise IOError("Failed to open video")
+        elif ret == Gst.StateChangeReturn.NO_PREROLL:
+            raise IOError("Live sources not supported")
+
+    def _seek(self, index):
+        assert index >= 0 and index < self.duration
+        ts = index * self.ns_per_frame
+        flags = Gst.SeekFlags.ACCURATE | Gst.SeekFlags.FLUSH
+        ok = self.pipeline.seek(1.0, Gst.Format.TIME, flags,
+                                Gst.SeekType.SET, ts,
+                                Gst.SeekType.NONE, 0)
         if not ok:
-            raise RuntimeError("Unable to seek")
+            raise RuntimeError("Seek event not handled")
+
+        self.pipeline.bus.timed_pop_filtered(
+            STATE_CHANGE_TIMEOUT, Gst.MessageType.ASYNC_DONE)
+
+        self.current_index = index
+
+    def _step(self, frame_count):
+        assert frame_count > 0
+
+        step_amount = frame_count * self.ns_per_frame
+        event = Gst.Event.new_step(Gst.Format.BUFFERS, frame_count, 1.0,
+                                   True, False)
+        ok = self.pipeline.send_event(event)
+        if not ok:
+            raise RuntimeError("Step event not handled")
+
+        self.pipeline.bus.timed_pop_filtered(STATE_CHANGE_TIMEOUT,
+                                             Gst.MessageType.ASYNC_DONE)
+
+        self.current_index += frame_count
+
+    def _get_frame(self, index):
+        cur_idx = self.current_index
+        max_delta = 1
+
+        if index < cur_idx:
+            self._seek(index)
+        elif index > cur_idx:
+            delta = index - cur_idx
+            if delta > max_delta:
+                self._seek(index)
+            else:
+                self._step(delta)
+
+        assert self.current_index == index
 
         sample = self.appsink.pull_preroll()
-        if sample is None:
-            LOG.warn("Seek failed, returning empty frame based on initial frame size")
-            return Image.new("RGB", (self.width, self.height))
         return _sample_to_image(sample)
 
     def _get_slice(self, slc):

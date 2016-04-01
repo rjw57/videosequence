@@ -8,5 +8,5 @@ setup(
 
     packages=find_packages(),
 
-    install_requires=["pillow"],
+    install_requires=["future", "pillow"],
 )
