@@ -3,7 +3,7 @@ Accessing Video Files as Python Sequences
 
 Videosequence is a library which hides the complexity of simply opening a video
 file in Python as a sequence of images. It exposes a video file as just that: a
-Python sequence type containing [PIL](https://pillow.readthedocs.org/)
+Python sequence type containing `PIL <https://pillow.readthedocs.org/>`_
 ``Image``-s.
 
 For example, suppose you want to dump every frame from a video stored in
@@ -54,9 +54,10 @@ Caveats
 
 * Iterating forward one frame at a time is fast. Tricks such as iterating
   backwards or skipping *n* frames at a time work but is likely to be slow.
-* The implementation is based on [GStreamer](https://gstreamer.freedesktop.org/)
+* The implementation is based on `GStreamer
+  <https://gstreamer.freedesktop.org/>`_
   and so *de facto* only works on a modern Unix-alike such as Linux or FreeBSD.
-* The [PyGObject introspection](https://wiki.gnome.org/Projects/PyGObject)
+* The `PyGObject introspection <https://wiki.gnome.org/Projects/PyGObject>`_
   libraries must be installed. (See below.)
 
 Installing
