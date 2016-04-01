@@ -88,7 +88,7 @@ To install the Python GObject bindings:
 
 .. code:: console
 
-    $ sudo apt install git1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 \
+    $ sudo apt install gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 \
                        python-gi python3-gi
 
 GStreamer is almost certainly already installed if you've got some modern
