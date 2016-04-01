@@ -108,5 +108,5 @@ should come with tests, please.
 Copyright and licensing
 -----------------------
 
-Videosequence is &copy; 2016 Rich Wareham. Full licence details can be found in
+Videosequence is © 2016 Rich Wareham. Full licence details can be found in
 the `LICENCE.txt <LICENCE.txt>`_ file.
