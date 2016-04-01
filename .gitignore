@@ -1,0 +1,16 @@
+# Python byte code caches
+*.pyc
+__pycache__
+
+# Build detritus
+*.egg-info
+dist
+build
+
+# Test detritus
+.cache
+.coverage
+htmlcov
+.tox
+example/output
+test/cache

@@ -1,0 +1,9 @@
+[MASTER]
+jobs=4
+
+[REPORTS]
+reports=no
+
+[TYPECHECK]
+ignored-modules=gi,Gst,GstApp
+

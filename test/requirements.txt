@@ -1,0 +1,4 @@
+pytest
+pytest-capturelog
+pytest-cov
+requests
