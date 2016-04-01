@@ -12,5 +12,4 @@ build
 .coverage
 htmlcov
 .tox
-example/output
-test/cache
+test/data
