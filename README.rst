@@ -7,6 +7,9 @@ Accessing Video Files as Python Sequences
 .. image:: https://coveralls.io/repos/github/rjw57/videosequence/badge.svg?branch=master
     :target: https://coveralls.io/github/rjw57/videosequence?branch=master
 
+.. image:: https://img.shields.io/pypi/v/videosequence.svg
+    :target: https://pypi.python.org/pypi/videosequence/
+
 Quite often I find myself writing scripts which need to load a few frames from a
 video file, process them and save the result to disk. It's a pain to implement
 video opening, seeking and decoding over and over again and complex Python
