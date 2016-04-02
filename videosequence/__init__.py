@@ -137,6 +137,9 @@ class VideoSequence(collections.Sequence):
         assert self.current_index == index
 
         sample = self.appsink.pull_preroll()
+        if sample is None:
+            LOG.warn("Returning empty frame since no preroll available")
+            return Image.new("RGB", (self.width, self.height))
         return _sample_to_image(sample)
 
     def _get_slice(self, slc):
