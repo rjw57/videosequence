@@ -17,7 +17,10 @@ from gi.repository import Gst, GstApp
 Gst.init()
 
 LOG = logging.getLogger()
-STATE_CHANGE_TIMEOUT = 5 * Gst.SECOND
+STATE_CHANGE_TIMEOUT = 1 * Gst.SECOND
+
+class VideoError(IOError):
+    pass
 
 class VideoSequence(collections.Sequence):
     """
@@ -45,12 +48,12 @@ class VideoSequence(collections.Sequence):
 
         sample = appsink.pull_preroll()
         if sample is None:
-            raise IOError("No data in video")
+            raise VideoError("No data in video")
 
         self.caps = sample.get_caps()
         ok, num, denom = self.caps.get_structure(0).get_fraction("framerate")
         if not ok:
-            raise IOError("Could not determine frame rate for seeking")
+            raise VideoError("Could not determine frame rate for seeking")
         self.ns_per_frame = (denom * Gst.SECOND) / num
 
         self.width = self.caps.get_structure(0).get_value("width")
@@ -58,7 +61,7 @@ class VideoSequence(collections.Sequence):
 
         ok, duration = pipeline.query_duration(Gst.Format.TIME)
         if not ok:
-            raise IOError("Could not determine duration of video")
+            raise VideoError("Could not determine duration of video")
 
         self.duration = int(duration / self.ns_per_frame)
 
@@ -68,15 +71,27 @@ class VideoSequence(collections.Sequence):
     def close(self):
         self.pipeline.set_state(Gst.State.NULL)
 
+    def _wait_async_done(self):
+        while True:
+            msg = self.pipeline.bus.timed_pop(STATE_CHANGE_TIMEOUT)
+            if msg is None:
+                raise VideoError("Timed out waiting for ASYNC_DONE message")
+            elif msg.type == Gst.MessageType.ASYNC_DONE:
+                return
+            elif msg.type == Gst.MessageType.ERROR:
+                error, debug = msg.parse_error()
+                if debug is not None:
+                    LOG.debug(debug)
+                raise VideoError(error.message)
+
     def _timeout_set_state(self, state):
         ret = self.pipeline.set_state(state)
         if ret == Gst.StateChangeReturn.ASYNC:
-            self.pipeline.bus.timed_pop_filtered(
-                    STATE_CHANGE_TIMEOUT, Gst.MessageType.ASYNC_DONE)
+            self._wait_async_done()
         if ret == Gst.StateChangeReturn.FAILURE:
-            raise IOError("Failed to open video")
+            raise VideoError("Failed to open video")
         elif ret == Gst.StateChangeReturn.NO_PREROLL:
-            raise IOError("Live sources not supported")
+            raise VideoError("Live sources not supported")
 
     def _seek(self, index):
         assert index >= 0 and index < self.duration
@@ -86,10 +101,9 @@ class VideoSequence(collections.Sequence):
                                 Gst.SeekType.SET, ts,
                                 Gst.SeekType.NONE, 0)
         if not ok:
-            raise RuntimeError("Seek event not handled")
+            raise VideoError("Seek event not handled")
 
-        self.pipeline.bus.timed_pop_filtered(
-            STATE_CHANGE_TIMEOUT, Gst.MessageType.ASYNC_DONE)
+        self._wait_async_done()
 
         self.current_index = index
 
@@ -101,10 +115,9 @@ class VideoSequence(collections.Sequence):
                                    True, False)
         ok = self.pipeline.send_event(event)
         if not ok:
-            raise RuntimeError("Step event not handled")
+            raise VideoError("Step event not handled")
 
-        self.pipeline.bus.timed_pop_filtered(STATE_CHANGE_TIMEOUT,
-                                             Gst.MessageType.ASYNC_DONE)
+        self._wait_async_done()
 
         self.current_index += frame_count
 
