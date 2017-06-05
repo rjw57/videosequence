@@ -14,7 +14,7 @@ gi.require_version('GstApp', '1.0')
 from gi.repository import Gst, GstApp
 
 # Initialise GStreamer
-Gst.init()
+Gst.init(None)
 
 LOG = logging.getLogger()
 STATE_CHANGE_TIMEOUT = 1 * Gst.SECOND
