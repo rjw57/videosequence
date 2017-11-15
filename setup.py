@@ -2,8 +2,8 @@ import os
 from setuptools import setup, find_packages
 
 def read_file(path):
-    with open(os.path.join(os.path.dirname(__file__), path), "r") as fobj:
-        return fobj.read()
+    with open(os.path.join(os.path.dirname(__file__), path), "rb") as fobj:
+        return fobj.read().decode('utf-8',  'ignore')
 
 setup(
     name="videosequence",
