@@ -22,7 +22,7 @@ STATE_CHANGE_TIMEOUT = 1 * Gst.SECOND
 class VideoError(IOError):
     pass
 
-class VideoSequence(collections.Sequence):
+class VideoSequence(collections.abc.Sequence):
     """
     A sequence of video frames.
 
